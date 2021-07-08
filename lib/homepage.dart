@@ -23,12 +23,10 @@ class _HomePageState extends State<HomePage> {
   bool carDrivingBackwards = false;
   bool carTurningLeft = false;
   bool carTurningRight = false;
-  double carWidth = 50;
+  double carWidth = 100;
   double carHeight = 50;
 
   List<LogicalKeyboardKey> heldKeys = [];
-
-  void onKeyboardPress(key, c, v) {}
 
   void startGame() {
     debugPrint(screenHeight.toString());
@@ -38,11 +36,8 @@ class _HomePageState extends State<HomePage> {
     Timer.periodic(Duration(milliseconds: 20), (timer) {
       if (carDrivingForward == true) {
         setState(() {
-          carX += (0.01 * cos(carDirection * pi / 180));
-          debugPrint(carX.toString());
-          var l = carX - (carWidth / screenWidth);
-          debugPrint(l.toString());
-          carY += 0.1 * sin(carDirection * pi / 180);
+          carX += 0.01 * cos(carDirection * pi / 180);
+          carY += 0.01 * sin(carDirection * pi / 180);
         });
       }
       if (carDrivingBackwards == true) {
@@ -79,39 +74,50 @@ class _HomePageState extends State<HomePage> {
             //debugPrint(key);
             if (heldKeys.contains(key)) return;
             heldKeys.add(key);
-            onKeyboardPress(key, e.character, 1);
             if (e.isKeyPressed(LogicalKeyboardKey.keyW)) {
               carDrivingForward = true;
             }
+            if (e.isKeyPressed(LogicalKeyboardKey.keyS)) {
+              carDrivingBackwards = true;
+            }
+            if (e.isKeyPressed(LogicalKeyboardKey.keyA)) {
+              carTurningLeft = true;
+            }
+            if (e.isKeyPressed(LogicalKeyboardKey.keyD)) {
+              carTurningRight = true;
+            }
           } else {
             heldKeys.remove(key);
-            onKeyboardPress(key, e.character, 0);
+            if (key == LogicalKeyboardKey.keyW) {
+              carDrivingForward = false;
+            }
+            if (key == LogicalKeyboardKey.keyS) {
+              carDrivingBackwards = false;
+            }
+            if (key == LogicalKeyboardKey.keyA) {
+              carTurningLeft = false;
+            }
+            if (key == LogicalKeyboardKey.keyD) {
+              carTurningRight = false;
+            }
           }
         },
         child: Stack(
           children: [
-            RotationTransition(
-              turns: AlwaysStoppedAnimation(carDirection / 360),
-              child: Container(
-                //width: carWidth,
-                //height: carHeight,
-                child: AnimatedContainer(
-                  alignment: Alignment(0.2, 1),
-                  //width: carWidth,
-                  //height: carHeight,
-                  duration: Duration(milliseconds: 0),
-                  //alignment: Alignment(carX - (carWidth/screenWidth),
-                  //    carY - (screenHeight / carHeight / 100)),
-
-                  child: UberCar(),
+            AnimatedContainer(
+              duration: Duration(milliseconds: 0),
+              alignment: Alignment(carX + ((carWidth / screenWidth) / 2),
+                  carY + ((carHeight / screenHeight) / 2)),
+              child: RotationTransition(
+                turns: AlwaysStoppedAnimation(carDirection / 360),
+                child: UberCar(
+                  carWidth: carWidth,
+                  carHeight: carHeight,
                 ),
               ),
             ),
             Align(
               alignment: Alignment.bottomLeft,
-              //width: 100,
-              //height: 100,
-
               child: Container(
                 width: 50,
                 height: 72,
