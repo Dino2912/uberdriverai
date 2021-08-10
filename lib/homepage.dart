@@ -14,6 +14,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool getDistances = true;
+
   final mapName = "testmap";
   final carSpeed = 5;
 
@@ -34,6 +36,13 @@ class _HomePageState extends State<HomePage> {
   var stopWatchTimer = ValueNotifier(0);
   bool gameEnded = false;
 
+  double lineLabelWidth = 30;
+  double lineLabelHeight = 20;
+  var lineForward = ValueNotifier(0.0);
+  var lineBackwards = ValueNotifier(0.0);
+  var lineLeft = ValueNotifier(0.0);
+  var lineRight = ValueNotifier(0.0);
+
   List<String> lines = [];
   List<String> markedAreas = [];
 
@@ -43,24 +52,24 @@ class _HomePageState extends State<HomePage> {
     debugPrint("The car has crashed!");
   }
 
-  isCollidingWithCar(fx, fy, sx, sy) {
-    if (carX > fx && carY > fy) {
-      if (carX < sx && carY < sy) {
+  isColliding(fx, fy, sx, sy, tx, ty, ex, ey) {
+    if (tx > fx && ty > fy) {
+      if (tx < sx && ty < sy) {
         return true;
       }
     }
-    if (carX + carWidth > fx && carY > fy) {
-      if (carX + carWidth < sx && carY < sy) {
+    if (ex > fx && ty > fy) {
+      if (ex < sx && ty < sy) {
         return true;
       }
     }
-    if (carX > fx && carY + carHeight > fy) {
-      if (carX < sx && carY + carHeight < sy) {
+    if (tx > fx && ey > fy) {
+      if (tx < sx && ey < sy) {
         return true;
       }
     }
-    if (carX + carWidth > fx && carY + carHeight > fy) {
-      if (carX + carWidth < sx && carY + carHeight < sy) {
+    if (ex > fx && ey > fy) {
+      if (ex < sx && ey < sy) {
         return true;
       }
     }
@@ -118,28 +127,40 @@ class _HomePageState extends State<HomePage> {
     }
     debugPrint(lines.length.toString());
     Timer.periodic(Duration(milliseconds: 100), (timer) {
-      debugPrint("X:$carX | Y:$carY");
+      //debugPrint("X:$carX | Y:$carY");
       for (var v in lines) {
-        bool isCollidingWithCarBool = isCollidingWithCar(
+        bool isCollidingWithCarBool = isColliding(
             double.parse(v.substring(0, 5)),
             double.parse(v.substring(5, 10)),
             double.parse(v.substring(10, 15)),
-            double.parse(v.substring(15, 20)));
+            double.parse(v.substring(15, 20)),
+            carX,
+            carY,
+            carX + carWidth,
+            carY + carHeight);
         if (isCollidingWithCarBool == true) {
           crashCrashed();
         }
       }
       bool isInMarkedArea = customerPickedUp == false
-          ? isCollidingWithCar(
+          ? isColliding(
               double.parse(markedAreas[1].substring(0, 5)),
               double.parse(markedAreas[1].substring(5, 10)),
               double.parse(markedAreas[1].substring(10, 15)),
-              double.parse(markedAreas[1].substring(15, 20)))
-          : isCollidingWithCar(
+              double.parse(markedAreas[1].substring(15, 20)),
+              carX,
+              carY,
+              carX + carWidth,
+              carY + carHeight)
+          : isColliding(
               double.parse(markedAreas[2].substring(0, 5)),
               double.parse(markedAreas[2].substring(5, 10)),
               double.parse(markedAreas[2].substring(10, 15)),
-              double.parse(markedAreas[2].substring(15, 20)));
+              double.parse(markedAreas[2].substring(15, 20)),
+              carX,
+              carY,
+              carX + carWidth,
+              carY + carHeight);
       isInMarkedArea ? markedAreaPoints++ : markedAreaPoints = 0;
       // ignore: unnecessary_statements
       markedAreaPoints >= 20
@@ -151,7 +172,121 @@ class _HomePageState extends State<HomePage> {
           // ignore: unnecessary_statements
           : null;
     });
-    Timer.periodic(Duration(milliseconds: 10), (timer) {
+    getDistances
+        ? Timer.periodic(Duration(milliseconds: 100), (timer) {
+            double cpx = carX + (carWidth / 2);
+            double cpy = carY;
+            bool hitWall = false;
+            while (!hitWall) {
+              cpy--;
+              for (var v in lines) {
+                hitWall = isColliding(
+                    double.parse(v.substring(0, 5)),
+                    double.parse(v.substring(5, 10)),
+                    double.parse(v.substring(10, 15)),
+                    double.parse(v.substring(15, 20)),
+                    cpx,
+                    cpy,
+                    cpx,
+                    cpy);
+                if (hitWall) {
+                  break;
+                }
+              }
+              if (hitWall) {
+                break;
+              }
+              if (cpy <= 0.0) {
+                break;
+              }
+            }
+            lineForward.value = cpy;
+            //debugPrint(lineForward.toString());
+            cpy = carY + carHeight;
+            hitWall = false;
+            while (!hitWall) {
+              cpy++;
+              for (var v in lines) {
+                hitWall = isColliding(
+                    double.parse(v.substring(0, 5)),
+                    double.parse(v.substring(5, 10)),
+                    double.parse(v.substring(10, 15)),
+                    double.parse(v.substring(15, 20)),
+                    cpx,
+                    cpy,
+                    cpx,
+                    cpy);
+                if (hitWall) {
+                  break;
+                }
+              }
+              if (hitWall) {
+                break;
+              }
+              if (cpy >= screenHeight) {
+                break;
+              }
+            }
+            lineBackwards.value = cpy;
+            //
+            cpx = carX;
+            cpy = carY + (carHeight / 2);
+            hitWall = false;
+            while (!hitWall) {
+              cpx--;
+              for (var v in lines) {
+                hitWall = isColliding(
+                    double.parse(v.substring(0, 5)),
+                    double.parse(v.substring(5, 10)),
+                    double.parse(v.substring(10, 15)),
+                    double.parse(v.substring(15, 20)),
+                    cpx,
+                    cpy,
+                    cpx,
+                    cpy);
+                if (hitWall) {
+                  break;
+                }
+              }
+              if (hitWall) {
+                break;
+              }
+              if (cpx <= 0.0) {
+                break;
+              }
+            }
+            lineLeft.value = cpx;
+            //
+            cpx = carX + carWidth;
+            hitWall = false;
+            while (!hitWall) {
+              cpx++;
+              for (var v in lines) {
+                hitWall = isColliding(
+                    double.parse(v.substring(0, 5)),
+                    double.parse(v.substring(5, 10)),
+                    double.parse(v.substring(10, 15)),
+                    double.parse(v.substring(15, 20)),
+                    cpx,
+                    cpy,
+                    cpx,
+                    cpy);
+                if (hitWall) {
+                  break;
+                }
+              }
+              if (hitWall) {
+                break;
+              }
+              if (cpx >= screenWidth) {
+                break;
+              }
+            }
+            lineRight.value = cpx;
+          })
+        // ignore: unnecessary_statements
+        : null;
+    Timer.periodic(Duration(milliseconds: 100), (timer) {
       // ignore: unnecessary_statements
       !gameEnded ? stopWatchTimer.value++ : null;
     });
@@ -240,6 +375,96 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ),
+                      getDistances
+                          ? Stack(
+                              children: [
+                                Positioned(
+                                  child: Container(
+                                    child: ValueListenableBuilder(
+                                      valueListenable: lineForward,
+                                      builder: (context, double n, c) {
+                                        int cn = carY.floor() - n.floor();
+                                        String t = cn.toString();
+                                        return Text(
+                                          '$t',
+                                          style: TextStyle(fontSize: 15),
+                                        );
+                                      },
+                                    ),
+                                    width: lineLabelWidth,
+                                    height: lineLabelHeight,
+                                  ),
+                                  top: lineForward.value,
+                                  left: carX +
+                                      (carWidth / 2) -
+                                      (lineLabelWidth / 2),
+                                ),
+                                Positioned(
+                                  child: Container(
+                                    child: ValueListenableBuilder(
+                                      valueListenable: lineBackwards,
+                                      builder: (context, double n, c) {
+                                        int cn = n.floor() - carY.floor();
+                                        String t = cn.toString();
+                                        return Text(
+                                          '$t',
+                                          style: TextStyle(fontSize: 15),
+                                        );
+                                      },
+                                    ),
+                                    width: lineLabelWidth,
+                                    height: lineLabelHeight,
+                                  ),
+                                  top: lineBackwards.value - lineLabelHeight,
+                                  left: carX +
+                                      (carWidth / 2) -
+                                      (lineLabelWidth / 2),
+                                ),
+                                Positioned(
+                                  child: Container(
+                                    child: ValueListenableBuilder(
+                                      valueListenable: lineLeft,
+                                      builder: (context, double n, c) {
+                                        int cn = carX.floor() - n.floor();
+                                        String t = cn.toString();
+                                        return Text(
+                                          '$t',
+                                          style: TextStyle(fontSize: 15),
+                                        );
+                                      },
+                                    ),
+                                    width: lineLabelWidth,
+                                    height: lineLabelHeight,
+                                  ),
+                                  top: carY +
+                                      (carHeight / 2) -
+                                      (lineLabelHeight / 2),
+                                  left: lineLeft.value,
+                                ),
+                                Positioned(
+                                  child: Container(
+                                    child: ValueListenableBuilder(
+                                      valueListenable: lineRight,
+                                      builder: (context, double n, c) {
+                                        int cn = n.floor() - carX.floor();
+                                        String t = cn.toString();
+                                        return Text(
+                                          '$t',
+                                          style: TextStyle(fontSize: 15),
+                                        );
+                                      },
+                                    ),
+                                    width: lineLabelWidth,
+                                    height: lineLabelHeight,
+                                  ),
+                                  top: carY +
+                                      (carHeight / 2) -
+                                      (lineLabelHeight / 2),
+                                  left: lineRight.value - lineLabelWidth,
+                                )
+                              ],
+                            )
+                          : Container(),
                     ],
                   )
                 : Container(),
