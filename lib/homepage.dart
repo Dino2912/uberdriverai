@@ -18,6 +18,8 @@ class _HomePageState extends State<HomePage> {
 
   final mapName = "testmap";
   final carSpeed = 5;
+  final showCarHitbox = true;
+  //final AIEnabled = true;
 
   double screenWidth = WidgetsBinding.instance!.window.physicalSize.width;
   double screenHeight = WidgetsBinding.instance!.window.physicalSize.height;
@@ -33,7 +35,7 @@ class _HomePageState extends State<HomePage> {
   double carHeight = 50;
   bool customerPickedUp = false;
   int markedAreaPoints = 0;
-  var stopWatchTimer = ValueNotifier(0);
+  var stopWatchTimer = ValueNotifier(0.0);
   bool gameEnded = false;
 
   double lineLabelWidth = 30;
@@ -42,6 +44,8 @@ class _HomePageState extends State<HomePage> {
   var lineBackwards = ValueNotifier(0.0);
   var lineLeft = ValueNotifier(0.0);
   var lineRight = ValueNotifier(0.0);
+  var linePickup = ValueNotifier(0.0);
+  var lineDropoff = ValueNotifier(0.0);
 
   List<String> lines = [];
   List<String> markedAreas = [];
@@ -123,7 +127,6 @@ class _HomePageState extends State<HomePage> {
     for (var i = 0; i < 3; i++) {
       markedAreas.add(lines[0]);
       lines.removeAt(0);
-      debugPrint("Removed");
     }
     debugPrint(lines.length.toString());
     Timer.periodic(Duration(milliseconds: 100), (timer) {
@@ -185,9 +188,9 @@ class _HomePageState extends State<HomePage> {
                     double.parse(v.substring(5, 10)),
                     double.parse(v.substring(10, 15)),
                     double.parse(v.substring(15, 20)),
-                    cpx,
+                    cpx - (carWidth / 2),
                     cpy,
-                    cpx,
+                    cpx + (carWidth / 2),
                     cpy);
                 if (hitWall) {
                   break;
@@ -212,9 +215,9 @@ class _HomePageState extends State<HomePage> {
                     double.parse(v.substring(5, 10)),
                     double.parse(v.substring(10, 15)),
                     double.parse(v.substring(15, 20)),
-                    cpx,
+                    cpx - (carWidth / 2),
                     cpy,
-                    cpx,
+                    cpx + (carWidth / 2),
                     cpy);
                 if (hitWall) {
                   break;
@@ -240,9 +243,9 @@ class _HomePageState extends State<HomePage> {
                     double.parse(v.substring(5, 10)),
                     double.parse(v.substring(10, 15)),
                     double.parse(v.substring(15, 20)),
-                    cpx,
+                    cpx - (carHeight / 2),
                     cpy,
-                    cpx,
+                    cpx + (carHeight / 2),
                     cpy);
                 if (hitWall) {
                   break;
@@ -267,9 +270,9 @@ class _HomePageState extends State<HomePage> {
                     double.parse(v.substring(5, 10)),
                     double.parse(v.substring(10, 15)),
                     double.parse(v.substring(15, 20)),
-                    cpx,
+                    cpx - (carHeight / 2),
                     cpy,
-                    cpx,
+                    cpx + (carHeight / 2),
                     cpy);
                 if (hitWall) {
                   break;
@@ -283,10 +286,47 @@ class _HomePageState extends State<HomePage> {
               }
             }
             lineRight.value = cpx;
+            //
+            double pickupMidX = double.parse(markedAreas[1].substring(0, 5)) +
+                ((double.parse(markedAreas[1].substring(10, 15)) -
+                        double.parse(markedAreas[1].substring(0, 5))) /
+                    2);
+            double pickupMidY = double.parse(markedAreas[1].substring(5, 10)) +
+                ((double.parse(markedAreas[1].substring(15, 20)) -
+                        double.parse(markedAreas[1].substring(5, 10))) /
+                    2);
+            double dropoffMidX = double.parse(markedAreas[2].substring(0, 5)) +
+                ((double.parse(markedAreas[2].substring(10, 15)) -
+                        double.parse(markedAreas[2].substring(0, 5))) /
+                    2);
+            double dropoffMidY = double.parse(markedAreas[2].substring(5, 10)) +
+                ((double.parse(markedAreas[2].substring(15, 20)) -
+                        double.parse(markedAreas[2].substring(5, 10))) /
+                    2);
+            if (carX + (carWidth / 2) > pickupMidX) {
+              linePickup.value = (carX + (carWidth / 2)) - pickupMidX;
+            } else {
+              linePickup.value = pickupMidX - (carX + (carWidth / 2));
+            }
+            if (carY + (carHeight / 2) > pickupMidY) {
+              linePickup.value += (carY + (carHeight / 2)) - pickupMidY;
+            } else {
+              linePickup.value += pickupMidY - (carY + (carHeight / 2));
+            }
+            if (carX + (carWidth / 2) > dropoffMidX) {
+              lineDropoff.value = (carX + (carWidth / 2)) - dropoffMidX;
+            } else {
+              lineDropoff.value = dropoffMidX - (carX + (carWidth / 2));
+            }
+            if (carY + (carHeight / 2) > dropoffMidY) {
+              lineDropoff.value += (carY + (carHeight / 2)) - dropoffMidY;
+            } else {
+              lineDropoff.value += dropoffMidY - (carY + (carHeight / 2));
+            }
           })
         // ignore: unnecessary_statements
         : null;
-    Timer.periodic(Duration(milliseconds: 100), (timer) {
+    Timer.periodic(Duration(milliseconds: 10), (timer) {
       // ignore: unnecessary_statements
       !gameEnded ? stopWatchTimer.value++ : null;
     });
@@ -294,6 +334,17 @@ class _HomePageState extends State<HomePage> {
 
   void makeCarDriveForward(v) {
     carDrivingForward = v;
+  }
+
+  void quickRestart() {
+    setState(() {
+      carX = double.parse(markedAreas[0].substring(0, 5));
+      carY = double.parse(markedAreas[0].substring(5, 10));
+      carDirection = 0;
+      customerPickedUp = false;
+      gameEnded = false;
+      stopWatchTimer.value = 0.0;
+    });
   }
 
   @override
@@ -319,6 +370,9 @@ class _HomePageState extends State<HomePage> {
             }
             if (e.isKeyPressed(LogicalKeyboardKey.keyD)) {
               carTurningRight = true;
+            }
+            if (e.isKeyPressed(LogicalKeyboardKey.keyR)) {
+              quickRestart();
             }
           } else {
             heldKeys.remove(key);
@@ -461,6 +515,44 @@ class _HomePageState extends State<HomePage> {
                                       (carHeight / 2) -
                                       (lineLabelHeight / 2),
                                   left: lineRight.value - lineLabelWidth,
+                                ),
+                                Positioned(
+                                  child: Container(
+                                    child: ValueListenableBuilder(
+                                      valueListenable: linePickup,
+                                      builder: (context, double n, c) {
+                                        //int cn = n.floor() - carX.floor();
+                                        String t = n.toInt().toString();
+                                        return Text(
+                                          '$t',
+                                          style: TextStyle(fontSize: 15),
+                                        );
+                                      },
+                                    ),
+                                    width: 50,
+                                    height: 20,
+                                  ),
+                                  top: 80,
+                                  left: 50,
+                                ),
+                                Positioned(
+                                  child: Container(
+                                    child: ValueListenableBuilder(
+                                      valueListenable: lineDropoff,
+                                      builder: (context, double n, c) {
+                                        //int cn = n.floor() - carX.floor();
+                                        String t = n.toInt().toString();
+                                        return Text(
+                                          '$t',
+                                          style: TextStyle(fontSize: 15),
+                                        );
+                                      },
+                                    ),
+                                    width: 50,
+                                    height: 20,
+                                  ),
+                                  top: 100,
+                                  left: 50,
                                 )
                               ],
                             )
@@ -494,6 +586,7 @@ class _HomePageState extends State<HomePage> {
                     carHeight: carHeight,
                   ),
                 ),
+                color: showCarHitbox ? Colors.grey : null,
               ),
             ),
             Align(
@@ -569,7 +662,7 @@ class _HomePageState extends State<HomePage> {
                 left: 1200,
                 child: ValueListenableBuilder(
                   valueListenable: stopWatchTimer,
-                  builder: (context, int n, c) {
+                  builder: (context, double n, c) {
                     double t = n / 100;
                     return Text('$t');
                   },
