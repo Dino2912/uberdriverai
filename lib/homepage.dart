@@ -14,10 +14,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool getDistances = true;
+  final getDistances = true;
+  final aIColors = true;
 
   final mapName = "testmap";
   final carSpeed = 5;
+  final turnSpeed = 3;
   final showCarHitbox = true;
   //final AIEnabled = true;
 
@@ -46,6 +48,7 @@ class _HomePageState extends State<HomePage> {
   var lineRight = ValueNotifier(0.0);
   var linePickup = ValueNotifier(0.0);
   var lineDropoff = ValueNotifier(0.0);
+  //var aIColor1 = ValueNotifier([0, 0, 0]);
 
   List<String> lines = [];
   List<String> markedAreas = [];
@@ -56,7 +59,32 @@ class _HomePageState extends State<HomePage> {
     debugPrint("The car has crashed!");
   }
 
-  isColliding(fx, fy, sx, sy, tx, ty, ex, ey) {
+  List<int> calculatePixelColor(int t) {
+    debugPrint("abc");
+    //int c = t.toInt();
+    //debugPrint("$c");
+    String v = t.toString();
+    debugPrint("$v");
+    String n = "";
+    //debugPrint("$c");
+    for (int i = 0; i < 6 - v.length; i++) {
+      n += "0";
+      debugPrint("Ran");
+    }
+    for (int i = 0; i < v.length; i++) {
+      debugPrint(i.toString());
+      debugPrint(v);
+      n += v[i];
+    }
+    debugPrint("ghi");
+    debugPrint(n);
+    List<String> r = [n[0] + n[1], n[2] + n[3], n[4] + n[5]];
+    debugPrint([n[0] + n[1], n[2] + n[3], n[4] + n[5]].toString());
+    debugPrint([int.parse(r[0]), int.parse(r[1]), int.parse(r[2])].toString());
+    return [int.parse(r[0]), int.parse(r[1]), int.parse(r[2])];
+  }
+
+  bool isColliding(fx, fy, sx, sy, tx, ty, ex, ey) {
     if (tx > fx && ty > fy) {
       if (tx < sx && ty < sy) {
         return true;
@@ -104,22 +132,38 @@ class _HomePageState extends State<HomePage> {
       if (carTurningLeft == true) {
         if (carDrivingForward && !carDrivingBackwards) {
           setState(() {
-            carDirection -= 3;
+            if (carDirection + turnSpeed < 0) {
+              carDirection = 360 - (turnSpeed - carDirection);
+            } else {
+              carDirection -= turnSpeed;
+            }
           });
         } else if (carDrivingBackwards && !carDrivingForward) {
           setState(() {
-            carDirection += 3;
+            if (carDirection + turnSpeed > 359) {
+              carDirection = turnSpeed - (360 - carDirection);
+            } else {
+              carDirection += turnSpeed;
+            }
           });
         }
       }
       if (carTurningRight == true) {
         if (carDrivingForward && !carDrivingBackwards) {
           setState(() {
-            carDirection += 3;
+            if (carDirection + turnSpeed > 359) {
+              carDirection = turnSpeed - (360 - carDirection);
+            } else {
+              carDirection += turnSpeed;
+            }
           });
         } else if (carDrivingBackwards && !carDrivingForward) {
           setState(() {
-            carDirection -= 3;
+            if (carDirection + turnSpeed < 0) {
+              carDirection = 360 - (turnSpeed - carDirection);
+            } else {
+              carDirection -= turnSpeed;
+            }
           });
         }
       }
@@ -326,7 +370,7 @@ class _HomePageState extends State<HomePage> {
           })
         // ignore: unnecessary_statements
         : null;
-    Timer.periodic(Duration(milliseconds: 10), (timer) {
+    Timer.periodic(Duration(milliseconds: 100), (timer) {
       // ignore: unnecessary_statements
       !gameEnded ? stopWatchTimer.value++ : null;
     });
@@ -659,14 +703,106 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Positioned(
-                left: 1200,
-                child: ValueListenableBuilder(
-                  valueListenable: stopWatchTimer,
-                  builder: (context, double n, c) {
-                    double t = n / 100;
-                    return Text('$t');
-                  },
-                )),
+              left: 1200,
+              child: ValueListenableBuilder(
+                valueListenable: stopWatchTimer,
+                builder: (context, double n, c) {
+                  double t = n / 100;
+                  return Text('$t');
+                },
+              ),
+            ),
+            aIColors
+                ? Stack(
+                    children: [
+                      Positioned(
+                        top: 0.0,
+                        left: 0.0,
+                        child: ValueListenableBuilder(
+                            valueListenable: lineForward,
+                            builder: (context, double n, c) {
+                              int cn = carY.floor() - n.floor();
+                              return Container(
+                                width: 1,
+                                height: 1,
+                                color: Color.fromARGB(
+                                    255,
+                                    calculatePixelColor(cn)[0],
+                                    calculatePixelColor(cn)[1],
+                                    calculatePixelColor(cn)[2]),
+                              );
+                            }),
+                      ),
+                      Positioned(
+                        top: 0.0,
+                        left: 1.0,
+                        child: ValueListenableBuilder(
+                            valueListenable: lineBackwards,
+                            builder: (context, double n, c) {
+                              int cn = n.floor() - carY.floor();
+                              return Container(
+                                width: 1,
+                                height: 1,
+                                color: Color.fromARGB(
+                                    255,
+                                    calculatePixelColor(cn)[0],
+                                    calculatePixelColor(cn)[1],
+                                    calculatePixelColor(cn)[2]),
+                              );
+                            }),
+                      ),
+                      Positioned(
+                        top: 0.0,
+                        left: 2.0,
+                        child: ValueListenableBuilder(
+                            valueListenable: lineLeft,
+                            builder: (context, double n, c) {
+                              int cn = carX.floor() - n.floor();
+                              return Container(
+                                width: 1,
+                                height: 1,
+                                color: Color.fromARGB(
+                                    255,
+                                    calculatePixelColor(cn)[0],
+                                    calculatePixelColor(cn)[1],
+                                    calculatePixelColor(cn)[2]),
+                              );
+                            }),
+                      ),
+                      Positioned(
+                        top: 0.0,
+                        left: 3.0,
+                        child: ValueListenableBuilder(
+                            valueListenable: lineRight,
+                            builder: (context, double n, c) {
+                              int cn = n.floor() - carX.floor();
+                              return Container(
+                                width: 1,
+                                height: 1,
+                                color: Color.fromARGB(
+                                    255,
+                                    calculatePixelColor(cn)[0],
+                                    calculatePixelColor(cn)[1],
+                                    calculatePixelColor(cn)[2]),
+                              );
+                            }),
+                      ),
+                      Positioned(
+                        top: 0.0,
+                        left: 4.0,
+                        child: Container(
+                          width: 1,
+                          height: 1,
+                          color: Color.fromARGB(
+                              255,
+                              calculatePixelColor(carDirection)[0],
+                              calculatePixelColor(carDirection)[1],
+                              calculatePixelColor(carDirection)[2]),
+                        ),
+                      ),
+                    ],
+                  )
+                : Container(),
           ],
         ),
       ),
